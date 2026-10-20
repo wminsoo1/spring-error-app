@@ -24,7 +24,7 @@ spec:
             - name: ERROR_RATE
               value: "0"
             - name: APP_VERSION
-              value: "v1"
+              value: "v2"
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
