@@ -1,0 +1,18 @@
+# 인증서·키 (예: zscaler-root.crt) — 공개 저장소에 올리지 않음
+*.crt
+*.pem
+*.key
+*.p12
+# 비밀값·접속 정보
+.env
+.env.*
+*secret*
+*token*
+kubeconfig
+*.kubeconfig
+# 빌드 산출물·IDE
+target/
+build/
+.idea/
+.vscode/
+*.log

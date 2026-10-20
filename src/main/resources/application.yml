@@ -1,0 +1,17 @@
+server:
+  port: 8080
+  shutdown: graceful            # 종료 신호를 받으면 처리 중인 요청을 마치고 종료
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true           # /actuator/health/liveness, /readiness 활성화
+  endpoints:
+    web:
+      exposure:
+        include: health
