@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
-          image: spring-error-app:v1
+          image: localhost:30002/member-a/spring-error-app:v1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
