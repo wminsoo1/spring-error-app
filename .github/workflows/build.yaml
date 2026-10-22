@@ -27,7 +27,7 @@ jobs:
       - name: 배포 파일 태그 변경·커밋
         run: |
           TAG=${GITHUB_SHA::7}
-          sed -i "s|image: $IMAGE:.*|image: $IMAGE:$TAG|" deploy/rollout.yaml
+          sed -i "s|^  tag: .*|  tag: $TAG|" deploy/chart/values.yaml
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git commit -am "deploy: $TAG"
