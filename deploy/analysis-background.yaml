@@ -1,17 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
-  name: canary-error-rate
+  name: error-rate-background
 spec:
+  args:
+    - name: service-name               # 요청을 보낼 Service. Rollout이 넘겨준다
   metrics:
-    - name: canary-error-rate
+    - name: error-rate
       interval: 20s
-      count: 3
-      failureLimit: 1
+      # count 없음 → 배포가 끝날 때까지 20초마다 / failureLimit 기본값 0 → 한 번 실패면 롤백
       provider:
         job:
           spec:
-            backoffLimit: 0
+            backoffLimit: 0            # 실패한 측정을 다시 돌리지 않는다
             template:
               spec:
                 restartPolicy: Never
@@ -25,7 +26,7 @@ spec:
                         n=50
                         fail=0
                         for i in $(seq 1 $n); do
-                          code=$(curl -s -o /dev/null -w '%{http_code}' http://spring-error-app-canary/api/hello)
+                          code=$(curl -s -o /dev/null -w '%{http_code}' http://{{args.service-name}}/api/hello)
                           [ "$code" != "200" ] && fail=$((fail+1))
                         done
                         echo "errors=${fail}/${n}"

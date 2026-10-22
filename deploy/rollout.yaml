@@ -5,6 +5,9 @@ metadata:
 spec:
   replicas: 5
   revisionHistoryLimit: 3
+  # [롤링일 때만 주석 해제] 300초 동안 진행이 없으면 자동 중단
+  # progressDeadlineSeconds: 300
+  # progressDeadlineAbort: true
   selector:
     matchLabels:
       app: spring-error-app
@@ -42,14 +45,48 @@ spec:
               memory: 256Mi
             limits:
               memory: 512Mi
+  # 전략은 하나만 켠다. 바꿀 때는 지금 켜진 블록을 주석 처리하고 다른 블록의 주석을 푼다.
   strategy:
+    # ── 카나리 (부록 G): 20→40→60→80%, 단계 사이 30초, 40%부터 20초마다 분석 ──
     canary:
       canaryService: spring-error-app-canary
+      analysis:
+        templates:
+          - templateName: error-rate-background
+        startingStep: 2
+        args:
+          - name: service-name
+            value: spring-error-app-canary
       steps:
         - setWeight: 20
-        - analysis:
-            templates:
-              - templateName: canary-error-rate
+        - pause: {duration: 30s}
+        - setWeight: 40
+        - pause: {duration: 30s}
         - setWeight: 60
-        - pause:
-            duration: 30s
+        - pause: {duration: 30s}
+        - setWeight: 80
+        - pause: {duration: 30s}
+
+    # ── 블루그린 (부록 F): 새 버전을 띄워 전환 전에 한 번 분석, 통과하면 자동 전환 ──
+    # blueGreen:
+    #   activeService: spring-error-app
+    #   previewService: spring-error-app-preview
+    #   prePromotionAnalysis:
+    #     templates:
+    #       - templateName: error-rate-once
+    #     args:
+    #       - name: service-name
+    #         value: spring-error-app-preview
+
+    # ── 롤링 (부록 E): 차례로 전부 교체한 뒤 한 번 분석 ──
+    # canary:
+    #   maxSurge: 1
+    #   maxUnavailable: 0
+    #   steps:
+    #     - setWeight: 100
+    #     - analysis:
+    #         templates:
+    #           - templateName: error-rate-once
+    #         args:
+    #           - name: service-name
+    #             value: spring-error-app
