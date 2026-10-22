@@ -6,7 +6,7 @@ strategy: canary
 
 image:
   repository: localhost:30002/member-a/spring-error-app
-  tag: 0ea331b                 # CI가 이 줄을 커밋 해시로 고친다
+  tag: 41d4639
 
 errorRate: "0"                 # 장애 버전 시험은 "0.3"
 appVersion: v5
