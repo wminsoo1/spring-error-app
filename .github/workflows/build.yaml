@@ -1,0 +1,34 @@
+name: build
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['deploy/**']   # CI가 고친 배포 파일 커밋으로는 다시 돌지 않게
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: self-hosted
+    env:
+      IMAGE: localhost:30002/member-a/spring-error-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Harbor 로그인
+        env:
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+        run: echo "$HARBOR_PASSWORD" | docker login localhost:30002 -u admin --password-stdin
+
+      - name: 이미지 빌드·push
+        run: |
+          TAG=${GITHUB_SHA::7}
+          docker build -t $IMAGE:$TAG .
+          docker push $IMAGE:$TAG
+
+      - name: 배포 파일 태그 변경·커밋
+        run: |
+          TAG=${GITHUB_SHA::7}
+          sed -i "s|image: $IMAGE:.*|image: $IMAGE:$TAG|" deploy/rollout.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy: $TAG"
+          git push
