@@ -1,0 +1,32 @@
+# 롤링·블루그린용: 한 번 재고 끝 (interval·count 없음, failureLimit 기본값 0 → 한 번 실패면 롤백)
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate-once
+spec:
+  args:
+    - name: service-name                 # 요청을 보낼 Service. rollout.yaml이 넘겨준다
+  metrics:
+    - name: error-rate
+      provider:
+        job:
+          spec:
+            backoffLimit: 0              # 실패한 측정을 다시 돌리지 않는다
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: check
+                    image: curlimages/curl:8.10.1
+                    imagePullPolicy: IfNotPresent
+                    command: ["sh", "-c"]
+                    args:
+                      - |
+                        n={{ .Values.analysis.requests }}
+                        fail=0
+                        for i in $(seq 1 $n); do
+                          code=$(curl -s -o /dev/null -w '%{http_code}' http://{{ "{{args.service-name}}" }}/api/hello)
+                          [ "$code" != "200" ] && fail=$((fail+1))
+                        done
+                        echo "errors=${fail}/${n}"
+                        [ $((fail * 100)) -lt $((n * {{ .Values.analysis.maxErrorPercent }})) ]
