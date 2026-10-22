@@ -1,0 +1,5 @@
+apiVersion: v2
+name: spring-error-app
+description: RQ2 배포 전략 비교용 앱 (strategy 값으로 롤링·블루그린·카나리 선택)
+type: application
+version: 0.1.0

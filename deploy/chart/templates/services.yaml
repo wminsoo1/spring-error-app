@@ -1,0 +1,35 @@
+# 사용자 요청용 (블루그린에서는 activeService, 롤링에서는 분석 대상)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}
+spec:
+  selector:
+    app: {{ .Values.name }}
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+# 카나리 새 버전만 (Argo Rollouts가 선택자에 새 버전 해시를 붙인다)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}-canary
+spec:
+  selector:
+    app: {{ .Values.name }}
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+# 블루그린 새 버전만 (전환 전 시험 요청용)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}-preview
+spec:
+  selector:
+    app: {{ .Values.name }}
+  ports:
+    - port: 80
+      targetPort: 8080

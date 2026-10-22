@@ -1,0 +1,99 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ .Values.name }}
+spec:
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: 3
+  {{- if eq .Values.strategy "rolling" }}
+  progressDeadlineSeconds: 300         # 300초 동안 진행이 없으면
+  progressDeadlineAbort: true          # 자동 중단하고 옛 버전으로
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ERROR_RATE
+              value: {{ .Values.errorRate | quote }}
+            - name: APP_VERSION
+              value: {{ .Values.appVersion | quote }}
+            - name: START_DELAY_SECONDS
+              value: {{ .Values.startDelaySeconds | quote }}
+          startupProbe:                    # 뜰 때까지는 이것만 본다. 통과해야 아래 두 개가 시작
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: {{ .Values.startupFailureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+  strategy:
+  {{- if eq .Values.strategy "bluegreen" }}
+    # 블루그린 (부록 F): 새 버전을 띄워 전환 전에 한 번 분석, 통과하면 자동 전환
+    blueGreen:
+      activeService: {{ .Values.name }}
+      previewService: {{ .Values.name }}-preview
+      prePromotionAnalysis:
+        templates:
+          - templateName: error-rate-once
+        args:
+          - name: service-name
+            value: {{ .Values.name }}-preview
+  {{- else if eq .Values.strategy "rolling" }}
+    # 롤링 (부록 E): 차례로 전부 교체한 뒤 한 번 분석
+    canary:
+      maxSurge: 1
+      maxUnavailable: 0
+      steps:
+        - setWeight: 100
+        - analysis:
+            templates:
+              - templateName: error-rate-once
+            args:
+              - name: service-name
+                value: {{ .Values.name }}
+  {{- else if eq .Values.strategy "canary" }}
+    # 카나리 (부록 G): 20→40→60→80%, 단계 사이 30초, 40%부터 20초마다 분석
+    canary:
+      canaryService: {{ .Values.name }}-canary
+      analysis:
+        templates:
+          - templateName: error-rate-background
+        startingStep: 2
+        args:
+          - name: service-name
+            value: {{ .Values.name }}-canary
+      steps:
+        - setWeight: 20
+        - pause: {duration: 30s}
+        - setWeight: 40
+        - pause: {duration: 30s}
+        - setWeight: 60
+        - pause: {duration: 30s}
+        - setWeight: 80
+        - pause: {duration: 30s}
+  {{- else }}
+    {{- fail "strategy는 canary, bluegreen, rolling 중 하나여야 합니다" }}
+  {{- end }}

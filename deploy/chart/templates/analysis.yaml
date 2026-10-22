@@ -1,0 +1,24 @@
+# 롤링·블루그린: 한 번 재고 끝 (interval·count 없음, failureLimit 기본값 0)
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate-once
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: error-rate
+      {{- include "errorapp.analysisJob" . | nindent 6 }}
+---
+# 카나리: 배포가 끝날 때까지 interval마다 (count 없음, failureLimit 기본값 0)
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate-background
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: error-rate
+      interval: {{ .Values.analysis.interval }}
+      {{- include "errorapp.analysisJob" . | nindent 6 }}

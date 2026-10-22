@@ -1,0 +1,29 @@
+# 공통 기본값. 서버별 값은 values-<서버>.yaml에서 덮어쓴다.
+name: spring-error-app
+
+# 배포 전략: canary | bluegreen | rolling
+strategy: canary
+
+image:
+  repository: localhost:30002/member-a/spring-error-app
+  tag: 0ea331b                 # CI가 이 줄을 커밋 해시로 고친다
+
+errorRate: "0"                 # 장애 버전 시험은 "0.3"
+appVersion: v5
+
+replicas: 5
+startDelaySeconds: 0           # 앱이 뜨기 전 일부러 기다리는 시간 (모델 서버 흉내)
+startupFailureThreshold: 12    # 시작 확인 허용 횟수. 5초 × 12 = 60초
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# 분석: 새 버전에 요청 50건, 오류 5% 이상이면 실패
+analysis:
+  requests: 50
+  maxErrorPercent: 5
+  interval: 20s                # 카나리 백그라운드 분석 간격

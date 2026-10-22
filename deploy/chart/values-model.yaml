@@ -1,0 +1,4 @@
+# 모델 서버: 모델을 불러와 늦게 뜨는 서버. Pod 2개, 시작 2분
+replicas: 2
+startDelaySeconds: 120
+startupFailureThreshold: 36    # 5초 × 36 = 180초 안에 떠야 한다
