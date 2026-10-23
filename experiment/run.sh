@@ -163,7 +163,8 @@ k6_start() {  # $1 초당 요청
   sleep 10   # 부하가 자리 잡을 때까지
 }
 k6_stop() {  # $1 저장할 파일
-  kubectl logs k6 -n $NS > "$1" 2>/dev/null
+  sleep 2                                                     # CSV가 파일에 마저 써지도록
+  kubectl exec k6 -n $NS -- cat /out/k6.csv > "$1" 2>/dev/null
   kubectl delete pod k6 -n $NS --wait=false >/dev/null
 }
 k6_count() {  # $1 파일 $2 시작 $3 끝 → "요청수 실패수"

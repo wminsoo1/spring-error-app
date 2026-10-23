@@ -12,7 +12,7 @@ spec:
   containers:
     - name: k6
       image: grafana/k6:1.8.2
-      args: ["run", "--include-system-env-vars", "--quiet", "--summary-mode=disabled", "--out", "csv=/dev/stdout", "/scripts/load.js"]
+      args: ["run", "--include-system-env-vars", "--quiet", "--summary-mode=disabled", "--out", "csv=/out/k6.csv", "/scripts/load.js"]   # 로그(stdout)는 10MiB에서 잘려 Pod 안 파일로 쓴다
       env:
         - name: RPS
           value: "__RPS__"
@@ -23,7 +23,11 @@ spec:
       volumeMounts:
         - name: script
           mountPath: /scripts
+        - name: out
+          mountPath: /out
   volumes:
+    - name: out
+      emptyDir: {}
     - name: script
       configMap:
         name: k6-script
