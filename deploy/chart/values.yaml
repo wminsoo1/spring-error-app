@@ -2,7 +2,7 @@
 name: spring-error-app
 
 # 배포 전략: canary | bluegreen | rolling
-strategy: bluegreen
+strategy: rolling
 
 image:
   repository: localhost:30002/member-a/spring-error-app
