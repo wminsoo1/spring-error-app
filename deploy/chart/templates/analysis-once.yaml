@@ -25,7 +25,7 @@ spec:
                         n={{ .Values.analysis.requests }}
                         fail=0
                         for i in $(seq 1 $n); do
-                          code=$(curl -s -o /dev/null -w '%{http_code}' http://{{ "{{args.service-name}}" }}/api/hello)
+                          code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 5 http://{{ "{{args.service-name}}" }}/api/hello)
                           [ "$code" != "200" ] && fail=$((fail+1))
                         done
                         echo "errors=${fail}/${n}"

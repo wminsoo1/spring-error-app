@@ -22,6 +22,10 @@ spec:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: IfNotPresent
+          lifecycle:
+            preStop:                       # 종료 신호 전에 잠깐 더 요청을 받음 (kube-proxy 반영 시간)
+              sleep:
+                seconds: {{ .Values.preStopSleepSeconds }}
           ports:
             - containerPort: 8080
           env:

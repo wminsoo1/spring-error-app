@@ -14,6 +14,7 @@ appVersion: v5
 replicas: 5
 startDelaySeconds: 0           # 앱이 뜨기 전 일부러 기다리는 시간 (모델 서버 흉내)
 startupFailureThreshold: 12    # 시작 확인 허용 횟수. 5초 × 12 = 60초
+preStopSleepSeconds: 5         # 종료 전 대기. Service에서 빠지는 동안 받은 요청을 처리
 
 resources:
   requests:
