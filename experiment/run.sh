@@ -137,13 +137,16 @@ wait_healthy() {  # $1 최대 초
 }
 
 # ---------------------------------------------------------------- 측정
-sampler() {  # $1 파일. 2초마다 "시각 Pod수 CPU(m) 메모리(Mi)"
-  local n cpu mem
+sampler() {  # $1 파일. 2초마다 "시각 Pod수(종료 중 제외) Pod수(전체) CPU(m) 메모리(Mi)"
+  local act all cpu mem
   while true; do
-    n=$(kubectl get pods -n $NS -l app=$APP --no-headers 2>/dev/null | wc -l)
+    # 종료 중인 Pod는 deletionTimestamp가 있다. maxSurge 계산에는 들어가지 않지만 사라질 때까지 자원은 씀
+    read -r act all < <(kubectl get pods -n $NS -l app=$APP \
+        -o jsonpath='{range .items[*]}{.metadata.deletionTimestamp}{"|\n"}{end}' 2>/dev/null \
+        | awk '{n++; if ($0 == "|") a++} END {print a+0, n+0}')
     read -r cpu mem < <(kubectl top pods -n $NS -l app=$APP --no-headers 2>/dev/null \
                         | awk '{c+=$2; m+=$3} END {print c+0, m+0}')
-    echo "$(now) $n $cpu $mem" >> "$1"
+    echo "$(now) $act $all $cpu $mem" >> "$1"
     sleep 2
   done
 }
@@ -185,7 +188,7 @@ run_one() {  # $1 서버 $2 전략 $3 정상|장애
   local s=$1 st=$2 k=$3 id="$1-$2-$3"
   local raw=$OUT/raw/$id; mkdir -p "$raw"; rm -f "$raw"/*
   log "===== $s · $st · $k"
-  prepare "$s" "$st" || { echo "$s,$st,$k,$(date +%FT%T),,setup-failed,,,,,,,," >> "$CSV"; return; }
+  prepare "$s" "$st" || { echo "$s,$st,$k,$(date +%FT%T),,setup-failed,,,,,,,,," >> "$CSV"; return; }
 
   k6_start "${RPS[$s]}"
   sampler "$raw/samples.txt" & local sp=$!
@@ -225,11 +228,11 @@ run_one() {  # $1 서버 $2 전략 $3 정상|장애
   [ -n "$t2" ] && git_s=$((t2 - t0))
   read -r reqs fails < <(k6_count "$raw/k6.csv" "$t0" "$end")
   ratio=$(awk -v f="$fails" -v n="$reqs" 'BEGIN {printf "%.4f", n ? f/n : 0}')
-  read -r maxp maxc maxm < <(awk -v s="$t0" -v e="$end" \
-    '$1>=s && $1<=e {if($2>p)p=$2; if($3>c)c=$3; if($4>m)m=$4} END {print p+0, c+0, m+0}' "$raw/samples.txt")
+  read -r maxp maxa maxc maxm < <(awk -v s="$t0" -v e="$end" \
+    '$1>=s && $1<=e {if($2>p)p=$2; if($3>a)a=$3; if($4>c)c=$4; if($5>m)m=$5} END {print p+0, a+0, c+0, m+0}' "$raw/samples.txt")
   extra=$((maxp - REPLICAS[$s]))
-  echo "$s,$st,$k,$(date -d @"$t0" +%FT%T),$dur,$phase,$git_s,$reqs,$fails,$ratio,$maxp,$extra,$maxc,$maxm" >> "$CSV"
-  log "   → ${dur:-timeout}초 · $phase · 실패 $fails/$reqs ($ratio) · 최대 Pod $maxp(+$extra) · CPU ${maxc}m · 메모리 ${maxm}Mi"
+  echo "$s,$st,$k,$(date -d @"$t0" +%FT%T),$dur,$phase,$git_s,$reqs,$fails,$ratio,$maxp,$extra,$maxa,$maxc,$maxm" >> "$CSV"
+  log "   → ${dur:-timeout}초 · $phase · 실패 $fails/$reqs ($ratio) · 최대 Pod $maxp(+$extra), 종료 중 포함 $maxa · CPU ${maxc}m · 메모리 ${maxm}Mi"
   sleep 30
 }
 
@@ -241,7 +244,7 @@ restore() {
 
 # ---------------------------------------------------------------- 시작
 mkdir -p "$OUT/raw"
-[ -f "$CSV" ] || echo "server,strategy,kind,pushed_at,duration_s,phase,git_restore_s,k6_reqs,k6_failed,error_ratio,max_pods,extra_pods,max_cpu_m,max_mem_mi" > "$CSV"
+[ -f "$CSV" ] || echo "server,strategy,kind,pushed_at,duration_s,phase,git_restore_s,k6_reqs,k6_failed,error_ratio,max_pods,extra_pods,max_pods_all,max_cpu_m,max_mem_mi" > "$CSV"
 kubectl top pods -n $NS >/dev/null 2>&1 || log "경고: kubectl top이 안 됨 (metrics-server 확인). CPU·메모리는 0으로 기록됨"
 
 case "${1:-}" in
