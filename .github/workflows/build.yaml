@@ -2,7 +2,7 @@ name: build
 on:
   push:
     branches: [main]
-    paths-ignore: ['deploy/**']   # CI가 고친 배포 파일 커밋으로는 다시 돌지 않게
+    paths-ignore: ['deploy/**', 'experiment/**']   # CI가 고친 배포 파일 커밋으로는 다시 돌지 않게
 permissions:
   contents: write
 jobs:
