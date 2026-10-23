@@ -9,7 +9,7 @@ image:
   tag: 465b584
 
 errorRate: "0"                 # 장애 버전 시험은 "0.3"
-appVersion: v5
+appVersion: v6
 
 replicas: 5
 startDelaySeconds: 0           # 앱이 뜨기 전 일부러 기다리는 시간 (모델 서버 흉내)
