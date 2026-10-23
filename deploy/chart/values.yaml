@@ -6,7 +6,7 @@ strategy: rolling
 
 image:
   repository: localhost:30002/member-a/spring-error-app
-  tag: 41d4639
+  tag: 465b584
 
 errorRate: "0"                 # 장애 버전 시험은 "0.3"
 appVersion: v5
