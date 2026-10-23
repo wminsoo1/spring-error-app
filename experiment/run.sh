@@ -18,7 +18,7 @@ NS=member-a                                     # 네임스페이스이자 Argo 
 APP=spring-error-app
 VALUES=$EXP/deploy/chart/values.yaml
 OUT=$HERE/results
-CSV=$OUT/results.csv
+CSV=${RESULTS:-$OUT/results.csv}                # 다시 잴 때는 RESULTS=results/rerun.csv 처럼 따로
 TIMEOUT=1200                                    # 1회 최대 20분 (모델 롤링 장애가 약 9분)
 
 declare -A RPS=([test]=5 [model]=10 [prod]=50)
@@ -122,8 +122,11 @@ is_rolled_back() {  # $1 전략. 중단됐고 사용자 요청이 모두 옛 버
     # 블루그린: active Service가 옛 버전을 가리키면 사용자는 옛 버전만 씀 (새 Pod는 30초 뒤 정리)
     [ "$(kubectl get svc $APP -n $NS -o jsonpath='{.spec.selector.rollouts-pod-template-hash}')" = "$stable" ]
   else
-    # 롤링·카나리: 기본 Service가 모든 Pod를 가리키므로 새 버전 Pod가 다 사라져야 함
-    [ "$(kubectl get pods -n $NS -l app=$APP --no-headers 2>/dev/null | grep -vc -- "-$stable-")" -eq 0 ]
+    # 롤링·카나리: 기본 Service가 모든 Pod를 가리키므로 "종료 중이 아닌" 새 버전 Pod가 없어야 함
+    # 종료 중인 Pod는 이미 Service에서 빠져 사용자 요청을 받지 않으므로 기다리지 않는다 (블루그린과 같은 사용자 기준)
+    [ "$(kubectl get pods -n $NS -l app=$APP \
+          -o jsonpath='{range .items[*]}{.metadata.labels.rollouts-pod-template-hash}{"|"}{.metadata.deletionTimestamp}{"\n"}{end}' \
+          | awk -F'|' -v s="$stable" '$1 != s && $2 == ""' | wc -l)" -eq 0 ]
   fi
 }
 
