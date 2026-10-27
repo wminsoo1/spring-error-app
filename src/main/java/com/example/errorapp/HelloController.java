@@ -25,6 +25,6 @@ public class HelloController {
         if (ThreadLocalRandom.current().nextDouble() < errorRate) {
             return ResponseEntity.status(500).body(Map.of("version", version, "result", "error"));
         }
-        return ResponseEntity.ok(Map.of("version", version, "result", "ok", "note", "cosign-test"));
+        return ResponseEntity.ok(Map.of("version", version, "result", "ok", "note", "https-test"));
     }
 }
