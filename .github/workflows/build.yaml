@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: self-hosted
     env:
-      IMAGE: harbor.lab:30002/member-a/spring-error-app     # 실습 DNS 이름 (전: localhost:30002)
+      IMAGE: harbor.lab:30002/member-a/spring-error-app     # 실습 DNS 이름, HTTPS
     steps:
       - uses: actions/checkout@v4
 
@@ -31,11 +31,10 @@ jobs:
           COSIGN_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
-          # Kyverno ClusterPolicy 검증기가 cosign v3 새 번들 형식을 못 읽어 예전 형식으로 서명한다.
-          # --tlog-upload=false: 공개 Rekor에 올리지 않음 (회사 규정)
+          # cosign v3 기본 형식(Sigstore 번들 + OCI referrers)으로 서명한다.
+          # signing-config.json: Rekor 목록이 비어 있어 공개 Rekor에 올리지 않음 (회사 규정)
           cosign sign --yes --key env://COSIGN_KEY \
-            --new-bundle-format=false --use-signing-config=false --tlog-upload=false \
-            --allow-http-registry \
+            --signing-config .github/cosign/signing-config.json \
             "${{ steps.build.outputs.ref }}"
 
       - name: 배포 파일 태그 변경·커밋
