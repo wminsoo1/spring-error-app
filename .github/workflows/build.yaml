@@ -9,14 +9,14 @@ jobs:
   build:
     runs-on: self-hosted
     env:
-      IMAGE: localhost:30002/member-a/spring-error-app
+      IMAGE: harbor.lab:30002/member-a/spring-error-app     # 실습 DNS 이름 (전: localhost:30002)
     steps:
       - uses: actions/checkout@v4
 
       - name: Harbor 로그인
         env:
           HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-        run: echo "$HARBOR_PASSWORD" | docker login localhost:30002 -u admin --password-stdin
+        run: echo "$HARBOR_PASSWORD" | docker login harbor.lab:30002 -u admin --password-stdin
 
       - name: 이미지 빌드·push
         id: build
