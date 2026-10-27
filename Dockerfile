@@ -4,7 +4,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn -q -B dependency:go-offline
 COPY src ./src
-RUN mvn -q -B package -DskipTests
+RUN mvn -q -B package            # 테스트 포함: 실패하면 여기서 빌드가 멈춤
 
 # 2단계: 실행 (빌드 도구를 빼서 이미지 크기를 줄임)
 FROM eclipse-temurin:21-jre-alpine
