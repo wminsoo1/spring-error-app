@@ -31,8 +31,10 @@ jobs:
           COSIGN_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
+          # Kyverno ClusterPolicy 검증기가 cosign v3 새 번들 형식을 못 읽어 예전 형식으로 서명한다.
+          # --tlog-upload=false: 공개 Rekor에 올리지 않음 (회사 규정)
           cosign sign --yes --key env://COSIGN_KEY \
-            --signing-config .github/cosign/signing-config.json \
+            --new-bundle-format=false --use-signing-config=false --tlog-upload=false \
             --allow-http-registry \
             "${{ steps.build.outputs.ref }}"
 
