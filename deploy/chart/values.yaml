@@ -6,7 +6,7 @@ strategy: rolling
 
 image:
   repository: harbor.lab:30002/member-a/spring-error-app   # 실습 DNS 이름 (전: localhost:30002)
-  tag: e66abc8
+  tag: a76dcae
 
 errorRate: "0"                 # 장애 버전 시험은 "0.3"
 appVersion: v5
